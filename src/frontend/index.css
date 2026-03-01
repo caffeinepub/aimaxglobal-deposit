@@ -1,0 +1,168 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Font Faces ─────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: "Sora";
+  src: url("/assets/fonts/Sora[wght].woff2") format("woff2");
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/assets/fonts/BricolageGrotesque[opsz,wdth,wght].woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+/* ─── Design Tokens ─────────────────────────────────────────────────────── */
+@layer base {
+  :root {
+    --radius: 0.75rem;
+
+    /* Dark crypto theme as default */
+    --background: 0.1 0.005 260;
+    --foreground: 0.95 0.01 90;
+
+    --card: 0.14 0.008 260;
+    --card-foreground: 0.95 0.01 90;
+
+    --popover: 0.16 0.008 260;
+    --popover-foreground: 0.95 0.01 90;
+
+    /* Gold primary */
+    --primary: 0.75 0.165 72;
+    --primary-foreground: 0.1 0.005 260;
+
+    --secondary: 0.18 0.01 260;
+    --secondary-foreground: 0.9 0.02 90;
+
+    --muted: 0.18 0.01 260;
+    --muted-foreground: 0.55 0.015 260;
+
+    /* Amber accent */
+    --accent: 0.72 0.18 52;
+    --accent-foreground: 0.1 0.005 260;
+
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+
+    --border: 0.25 0.01 260;
+    --input: 0.22 0.01 260;
+    --ring: 0.75 0.165 72;
+
+    /* Chart colors */
+    --chart-1: 0.75 0.165 72;
+    --chart-2: 0.72 0.18 52;
+    --chart-3: 0.65 0.15 85;
+    --chart-4: 0.5 0.12 200;
+    --chart-5: 0.6 0.2 160;
+
+    /* Sidebar */
+    --sidebar: 0.12 0.006 260;
+    --sidebar-foreground: 0.95 0.01 90;
+    --sidebar-primary: 0.75 0.165 72;
+    --sidebar-primary-foreground: 0.1 0.005 260;
+    --sidebar-accent: 0.18 0.01 260;
+    --sidebar-accent-foreground: 0.9 0.02 90;
+    --sidebar-border: 0.25 0.01 260;
+    --sidebar-ring: 0.75 0.165 72;
+
+    /* Custom tokens */
+    --gold: 0.75 0.165 72;
+    --gold-bright: 0.82 0.175 82;
+    --gold-dim: 0.55 0.12 72;
+    --bnb-yellow: 0.88 0.18 95;
+    --bnb-yellow-dim: 0.65 0.14 95;
+    --sol-purple: 0.65 0.22 290;
+    --sol-teal: 0.68 0.2 195;
+    --deep-bg: 0.07 0.005 260;
+    --card-glow-gold: oklch(0.75 0.165 72 / 0.08);
+    --card-glow-bnb: oklch(0.88 0.18 95 / 0.08);
+    --card-glow-sol: oklch(0.68 0.2 195 / 0.08);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Sora", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* ─── Utilities ──────────────────────────────────────────────────────────── */
+@layer utilities {
+  .font-display {
+    font-family: "Bricolage Grotesque", sans-serif;
+  }
+
+  .glass-dark {
+    background: oklch(0.14 0.008 260 / 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .glow-gold {
+    box-shadow:
+      0 0 30px oklch(0.75 0.165 72 / 0.15),
+      0 0 60px oklch(0.75 0.165 72 / 0.06);
+  }
+
+  .glow-bnb {
+    box-shadow:
+      0 0 30px oklch(0.88 0.18 95 / 0.18),
+      0 0 60px oklch(0.88 0.18 95 / 0.07);
+  }
+
+  .glow-sol {
+    box-shadow:
+      0 0 30px oklch(0.68 0.2 195 / 0.18),
+      0 0 60px oklch(0.65 0.22 290 / 0.1);
+  }
+
+  .text-gold {
+    color: oklch(var(--gold));
+  }
+
+  .text-bnb {
+    color: oklch(var(--bnb-yellow));
+  }
+
+  .text-sol {
+    color: oklch(var(--sol-teal));
+  }
+
+  .bg-deep {
+    background-color: oklch(var(--deep-bg));
+  }
+
+  .border-gold {
+    border-color: oklch(var(--gold) / 0.3);
+  }
+
+  .border-bnb {
+    border-color: oklch(var(--bnb-yellow) / 0.3);
+  }
+
+  .border-sol {
+    border-color: oklch(var(--sol-teal) / 0.3);
+  }
+
+  .noise-bg::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+}
