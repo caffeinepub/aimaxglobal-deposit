@@ -1,15 +1,20 @@
 import { Toaster } from "@/components/ui/sonner";
 import {
   Activity,
+  AlertTriangle,
+  ArrowUpRight,
   Bot,
   Check,
   Copy,
   ExternalLink,
+  Lock,
+  LogOut,
   Send,
   Shield,
   Star,
   TrendingDown,
   TrendingUp,
+  User,
   Zap,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -751,6 +756,8 @@ const INVESTMENT_PLANS = [
     amount: "$10",
     return: "30%",
     returnLabel: "30% Return",
+    min: "$10",
+    max: "$50",
     popular: false,
     color: "oklch(0.65 0.18 230)",
     bg: "oklch(0.18 0.04 230 / 0.4)",
@@ -763,6 +770,8 @@ const INVESTMENT_PLANS = [
     amount: "$30",
     return: "45%",
     returnLabel: "45% Return",
+    min: "$30",
+    max: "$200",
     popular: true,
     color: "oklch(0.88 0.18 95)",
     bg: "oklch(0.2 0.06 72 / 0.4)",
@@ -775,6 +784,8 @@ const INVESTMENT_PLANS = [
     amount: "$100",
     return: "90%",
     returnLabel: "90% Return",
+    min: "$100",
+    max: "$1000",
     popular: false,
     color: "oklch(0.7 0.22 145)",
     bg: "oklch(0.18 0.05 145 / 0.4)",
@@ -876,6 +887,42 @@ function InvestmentPlans() {
                 <p className="text-xs text-muted-foreground mt-1">
                   Deposit Amount
                 </p>
+                {/* Min / Max row */}
+                <div className="flex items-center justify-center gap-3 mt-2">
+                  <span
+                    className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+                    style={{
+                      background: "oklch(0.12 0.01 260 / 0.6)",
+                      borderColor: plan.border,
+                      color: plan.color,
+                    }}
+                  >
+                    Min {plan.min}
+                  </span>
+                  <span
+                    className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+                    style={{
+                      background: "oklch(0.12 0.01 260 / 0.6)",
+                      borderColor: plan.border,
+                      color: plan.color,
+                    }}
+                  >
+                    Max {plan.max}
+                  </span>
+                </div>
+              </div>
+
+              {/* Instant Payout badge */}
+              <div
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full border text-[10px] font-semibold"
+                style={{
+                  background: "oklch(0.18 0.08 145 / 0.35)",
+                  borderColor: "oklch(0.5 0.18 145 / 0.4)",
+                  color: "oklch(0.72 0.2 145)",
+                }}
+              >
+                <Zap className="w-3 h-3" fill="currentColor" />
+                Instant Payout
               </div>
 
               {/* Return */}
@@ -897,22 +944,24 @@ function InvestmentPlans() {
                 </p>
               </div>
 
-              {/* Invest button */}
-              <motion.a
-                href={TELEGRAM_BOTS[0].url}
-                target="_blank"
-                rel="noopener noreferrer"
+              {/* Invest button — scrolls to deposit section */}
+              <motion.button
+                onClick={() => {
+                  document
+                    .getElementById("deposit-section")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.96 }}
-                className="w-full mt-1 py-2.5 rounded-lg text-sm font-bold text-center border transition-all duration-200"
+                className="w-full mt-1 py-2.5 rounded-lg text-sm font-bold text-center border transition-all duration-200 cursor-pointer"
                 style={{
-                  background: `linear-gradient(135deg, ${plan.color} 0%, oklch(from ${plan.color} calc(l - 0.08) c h) 100%)`,
+                  background: plan.color,
                   borderColor: plan.border,
                   color: "oklch(0.08 0.01 260)",
                 }}
               >
                 Invest Now
-              </motion.a>
+              </motion.button>
             </motion.div>
           ))}
         </div>
@@ -924,6 +973,1115 @@ function InvestmentPlans() {
         </p>
       </div>
     </motion.div>
+  );
+}
+
+// ─── Withdrawal Section ───────────────────────────────────────────────────────
+const MIN_WITHDRAWAL = 16;
+
+function WithdrawalSection() {
+  const [network, setNetwork] = useState<"sol" | "bnb">("sol");
+  const [walletAddress, setWalletAddress] = useState("");
+  const [amount, setAmount] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [amountError, setAmountError] = useState("");
+
+  const amountNum = Number.parseFloat(amount);
+  const isAmountTooLow =
+    amount !== "" && !Number.isNaN(amountNum) && amountNum < MIN_WITHDRAWAL;
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setAmount(val);
+    const num = Number.parseFloat(val);
+    if (val !== "" && !Number.isNaN(num) && num < MIN_WITHDRAWAL) {
+      setAmountError(`Minimum withdrawal amount is $${MIN_WITHDRAWAL}`);
+    } else {
+      setAmountError("");
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!walletAddress.trim()) {
+      toast.error("Please enter your wallet address.");
+      return;
+    }
+    if (!amount || Number.isNaN(amountNum) || amountNum < MIN_WITHDRAWAL) {
+      toast.error(`Minimum withdrawal is $${MIN_WITHDRAWAL}.`);
+      return;
+    }
+    setSubmitted(true);
+    toast.success("Withdrawal request submitted!", {
+      description: "Processing time: 24-48 hours.",
+      duration: 4000,
+    });
+  };
+
+  const solAccent = "oklch(0.68 0.2 195)";
+  const bnbAccent = "oklch(0.88 0.18 95)";
+  const activeAccent = network === "sol" ? solAccent : bnbAccent;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className="rounded-2xl border overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(135deg, oklch(0.17 0.025 20 / 0.55) 0%, oklch(0.12 0.01 260 / 0.9) 100%)",
+        borderColor: "oklch(0.55 0.2 25 / 0.35)",
+        boxShadow:
+          "0 0 30px oklch(0.55 0.2 25 / 0.1), 0 0 60px oklch(0.55 0.2 25 / 0.04)",
+      }}
+    >
+      <div className="p-5 sm:p-7">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{
+              background:
+                "linear-gradient(135deg, oklch(0.6 0.22 25) 0%, oklch(0.5 0.2 35) 100%)",
+              boxShadow: "0 0 20px oklch(0.6 0.22 25 / 0.35)",
+            }}
+          >
+            <ArrowUpRight className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2
+              className="font-display text-xl font-bold"
+              style={{ color: "oklch(0.82 0.2 25)" }}
+            >
+              Withdrawal Request
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Min $16 · SOL or BNB Smart Chain
+            </p>
+          </div>
+        </div>
+
+        {submitted ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className="flex flex-col items-center gap-3 py-8 text-center"
+          >
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center"
+              style={{ background: "oklch(0.35 0.15 145 / 0.2)" }}
+            >
+              <Check
+                className="w-8 h-8"
+                style={{ color: "oklch(0.7 0.2 145)" }}
+              />
+            </div>
+            <p
+              className="font-display text-lg font-bold"
+              style={{ color: "oklch(0.7 0.2 145)" }}
+            >
+              Withdrawal Request Submitted!
+            </p>
+            <p
+              className="text-sm leading-relaxed"
+              style={{ color: "oklch(0.72 0.08 260)" }}
+            >
+              Processing time: 24-48 hours.
+            </p>
+            <div
+              className="mt-1 px-4 py-2.5 rounded-xl border text-xs font-mono text-left w-full max-w-sm"
+              style={{
+                background: "oklch(0.1 0.005 260 / 0.6)",
+                borderColor: "oklch(0.35 0.08 260 / 0.4)",
+                color: "oklch(0.65 0.08 260)",
+              }}
+            >
+              <span className="block text-muted-foreground mb-1 uppercase tracking-widest text-[10px]">
+                Wallet
+              </span>
+              <span className="break-all">
+                {walletAddress.length > 28
+                  ? `${walletAddress.slice(0, 14)}…${walletAddress.slice(-12)}`
+                  : walletAddress}
+              </span>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                setSubmitted(false);
+                setWalletAddress("");
+                setAmount("");
+                setAmountError("");
+              }}
+              className="mt-2 px-5 py-2 rounded-lg text-sm font-medium border"
+              style={{
+                background: "oklch(0.14 0.01 260 / 0.6)",
+                borderColor: "oklch(0.45 0.15 25 / 0.4)",
+                color: "oklch(0.75 0.18 25)",
+              }}
+            >
+              New Request
+            </motion.button>
+          </motion.div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Network Selector */}
+            <div className="space-y-1.5">
+              <span
+                className="block text-xs uppercase tracking-widest font-semibold"
+                style={{ color: "oklch(0.65 0.14 25)" }}
+              >
+                Network
+              </span>
+              <div className="grid grid-cols-2 gap-3">
+                {(["sol", "bnb"] as const).map((net) => {
+                  const isSol = net === "sol";
+                  const accent = isSol ? solAccent : bnbAccent;
+                  const isActive = network === net;
+                  return (
+                    <motion.button
+                      key={net}
+                      type="button"
+                      onClick={() => setNetwork(net)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      className="flex items-center gap-2.5 px-4 py-3 rounded-xl border transition-all duration-200"
+                      style={{
+                        background: isActive
+                          ? `oklch(from ${accent} l c h / 0.12)`
+                          : "oklch(0.1 0.005 260 / 0.5)",
+                        borderColor: isActive
+                          ? `oklch(from ${accent} l c h / 0.55)`
+                          : "oklch(0.25 0.008 260)",
+                        boxShadow: isActive
+                          ? `0 0 16px oklch(from ${accent} l c h / 0.18)`
+                          : "none",
+                      }}
+                    >
+                      <span className="text-lg">{isSol ? "◎" : "⬡"}</span>
+                      <div className="text-left">
+                        <p
+                          className="text-sm font-bold leading-none"
+                          style={{
+                            color: isActive ? accent : "oklch(0.65 0.02 260)",
+                          }}
+                        >
+                          {isSol ? "SOL" : "BNB"}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {isSol ? "Solana" : "BNB Smart Chain"}
+                        </p>
+                      </div>
+                      {isActive && (
+                        <motion.div
+                          layoutId="network-check"
+                          className="ml-auto w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+                          style={{ background: accent }}
+                        >
+                          <Check className="w-2.5 h-2.5 text-black" />
+                        </motion.div>
+                      )}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Wallet Address */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="withdraw-address"
+                className="text-xs uppercase tracking-widest font-semibold"
+                style={{ color: "oklch(0.65 0.14 25)" }}
+              >
+                {network === "sol" ? "SOL" : "BNB"} Wallet Address
+              </label>
+              <input
+                id="withdraw-address"
+                type="text"
+                value={walletAddress}
+                onChange={(e) => setWalletAddress(e.target.value)}
+                placeholder={
+                  network === "sol"
+                    ? "Solana wallet address (e.g. ASEz...)"
+                    : "0x... BNB Smart Chain address"
+                }
+                className="w-full px-4 py-3 rounded-xl text-sm font-mono outline-none transition-all duration-200 placeholder:text-muted-foreground/40"
+                style={{
+                  background: "oklch(0.1 0.005 260 / 0.7)",
+                  border: "1px solid oklch(0.3 0.08 25 / 0.3)",
+                  color: "oklch(0.92 0.01 260)",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = `oklch(from ${activeAccent} l c h / 0.65)`;
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor =
+                    "oklch(0.3 0.08 25 / 0.3)";
+                }}
+              />
+            </div>
+
+            {/* Amount */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="withdraw-amount"
+                  className="text-xs uppercase tracking-widest font-semibold"
+                  style={{ color: "oklch(0.65 0.14 25)" }}
+                >
+                  Amount (USD)
+                </label>
+                <span
+                  className="text-[10px] font-semibold px-2 py-0.5 rounded-full border"
+                  style={{
+                    background: "oklch(0.18 0.06 25 / 0.3)",
+                    borderColor: "oklch(0.5 0.18 25 / 0.3)",
+                    color: "oklch(0.72 0.18 25)",
+                  }}
+                >
+                  Min ${MIN_WITHDRAWAL}
+                </span>
+              </div>
+              <input
+                id="withdraw-amount"
+                type="number"
+                min={MIN_WITHDRAWAL}
+                step="0.01"
+                value={amount}
+                onChange={handleAmountChange}
+                placeholder="Enter amount (min $16)"
+                className="w-full px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all duration-200 placeholder:text-muted-foreground/40"
+                style={{
+                  background: "oklch(0.1 0.005 260 / 0.7)",
+                  border: `1px solid ${isAmountTooLow ? "oklch(0.6 0.22 25 / 0.6)" : "oklch(0.3 0.08 25 / 0.3)"}`,
+                  color: "oklch(0.92 0.01 260)",
+                }}
+                onFocus={(e) => {
+                  if (!isAmountTooLow)
+                    e.currentTarget.style.borderColor = `oklch(from ${activeAccent} l c h / 0.65)`;
+                }}
+                onBlur={(e) => {
+                  if (!isAmountTooLow)
+                    e.currentTarget.style.borderColor =
+                      "oklch(0.3 0.08 25 / 0.3)";
+                }}
+              />
+
+              {/* Warning when amount is too low */}
+              <AnimatePresence>
+                {amountError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -6, height: 0 }}
+                    transition={{ duration: 0.22 }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-lg border"
+                    style={{
+                      background: "oklch(0.2 0.08 25 / 0.2)",
+                      borderColor: "oklch(0.6 0.22 25 / 0.4)",
+                    }}
+                  >
+                    <AlertTriangle
+                      className="w-3.5 h-3.5 flex-shrink-0"
+                      style={{ color: "oklch(0.72 0.22 25)" }}
+                    />
+                    <p
+                      className="text-xs font-medium"
+                      style={{ color: "oklch(0.75 0.18 25)" }}
+                    >
+                      {amountError}
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Submit */}
+            <motion.button
+              type="submit"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              className="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-200 flex items-center justify-center gap-2"
+              style={{
+                background:
+                  "linear-gradient(135deg, oklch(0.58 0.22 25) 0%, oklch(0.48 0.2 15) 100%)",
+                color: "white",
+                boxShadow: "0 0 24px oklch(0.55 0.22 25 / 0.28)",
+              }}
+            >
+              <ArrowUpRight className="w-4 h-4" />
+              Submit Withdrawal
+            </motion.button>
+
+            {/* Processing note */}
+            <p
+              className="text-[11px] text-center leading-relaxed"
+              style={{ color: "oklch(0.5 0.04 260)" }}
+            >
+              Withdrawal requests are processed within 24-48 hours. Ensure your
+              wallet address is correct.
+            </p>
+          </form>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Training Registration Form ───────────────────────────────────────────────
+function TrainingForm() {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !phone.trim()) {
+      toast.error("Please fill in both fields.");
+      return;
+    }
+    setSubmitted(true);
+    toast.success("Training registration successful!", {
+      description: `Welcome, ${name}! We will contact you shortly.`,
+      duration: 4000,
+    });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className="rounded-2xl border overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(135deg, oklch(0.16 0.02 280 / 0.6) 0%, oklch(0.12 0.01 260 / 0.9) 100%)",
+        borderColor: "oklch(0.55 0.18 280 / 0.35)",
+        boxShadow:
+          "0 0 30px oklch(0.55 0.18 280 / 0.1), 0 0 60px oklch(0.55 0.18 280 / 0.05)",
+      }}
+    >
+      <div className="p-5 sm:p-7">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+            style={{
+              background:
+                "linear-gradient(135deg, oklch(0.55 0.22 280) 0%, oklch(0.45 0.18 260) 100%)",
+              boxShadow: "0 0 20px oklch(0.55 0.22 280 / 0.35)",
+            }}
+          >
+            <User className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2
+              className="font-display text-xl font-bold"
+              style={{ color: "oklch(0.82 0.18 280)" }}
+            >
+              Training Registration
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Register for AimaxGlobal training program
+            </p>
+          </div>
+        </div>
+
+        {submitted ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className="flex flex-col items-center gap-3 py-6 text-center"
+          >
+            <div
+              className="w-14 h-14 rounded-full flex items-center justify-center"
+              style={{ background: "oklch(0.35 0.15 145 / 0.25)" }}
+            >
+              <Check className="w-7 h-7 text-emerald-400" />
+            </div>
+            <p
+              className="font-display text-lg font-bold"
+              style={{ color: "oklch(0.7 0.2 145)" }}
+            >
+              Successfully Registered!
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Welcome,{" "}
+              <span className="text-foreground font-semibold">{name}</span>! Our
+              team will contact you at{" "}
+              <span className="text-foreground font-semibold">{phone}</span>.
+            </p>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => {
+                setSubmitted(false);
+                setName("");
+                setPhone("");
+              }}
+              className="mt-2 px-5 py-2 rounded-lg text-sm font-medium border"
+              style={{
+                background: "oklch(0.16 0.01 260 / 0.6)",
+                borderColor: "oklch(0.4 0.1 280 / 0.4)",
+                color: "oklch(0.75 0.14 280)",
+              }}
+            >
+              Register Another
+            </motion.button>
+          </motion.div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name field */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="training-name"
+                className="text-xs uppercase tracking-widest font-semibold"
+                style={{ color: "oklch(0.65 0.12 280)" }}
+              >
+                Full Name
+              </label>
+              <input
+                id="training-name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter your full name"
+                className="w-full px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all duration-200 placeholder:text-muted-foreground/50"
+                style={{
+                  background: "oklch(0.1 0.005 260 / 0.7)",
+                  border: "1px solid oklch(0.35 0.08 280 / 0.4)",
+                  color: "oklch(0.92 0.01 260)",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor =
+                    "oklch(0.55 0.18 280 / 0.7)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor =
+                    "oklch(0.35 0.08 280 / 0.4)";
+                }}
+              />
+            </div>
+
+            {/* Phone / WhatsApp field */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="training-phone"
+                className="text-xs uppercase tracking-widest font-semibold"
+                style={{ color: "oklch(0.65 0.12 280)" }}
+              >
+                Phone / WhatsApp Number
+              </label>
+              <input
+                id="training-phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+92 300 0000000"
+                className="w-full px-4 py-3 rounded-xl text-sm font-medium outline-none transition-all duration-200 placeholder:text-muted-foreground/50"
+                style={{
+                  background: "oklch(0.1 0.005 260 / 0.7)",
+                  border: "1px solid oklch(0.35 0.08 280 / 0.4)",
+                  color: "oklch(0.92 0.01 260)",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor =
+                    "oklch(0.55 0.18 280 / 0.7)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor =
+                    "oklch(0.35 0.08 280 / 0.4)";
+                }}
+              />
+            </div>
+
+            {/* Submit */}
+            <motion.button
+              type="submit"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              className="w-full py-3 rounded-xl text-sm font-bold tracking-wide transition-all duration-200"
+              style={{
+                background:
+                  "linear-gradient(135deg, oklch(0.55 0.22 280) 0%, oklch(0.45 0.18 260) 100%)",
+                color: "white",
+                boxShadow: "0 0 24px oklch(0.55 0.22 280 / 0.3)",
+              }}
+            >
+              Register for Training
+            </motion.button>
+          </form>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Stored User type ─────────────────────────────────────────────────────────
+interface StoredUser {
+  username: string;
+  password: string;
+  name: string;
+}
+
+function getStoredUsers(): StoredUser[] {
+  try {
+    return JSON.parse(localStorage.getItem("cvp_users") ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
+// ─── Auth Field ───────────────────────────────────────────────────────────────
+function AuthField({
+  id,
+  label,
+  type,
+  value,
+  onChange,
+  placeholder,
+  icon: Icon,
+  autoComplete,
+}: {
+  id: string;
+  label: string;
+  type: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  icon: React.ElementType;
+  autoComplete?: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label
+        htmlFor={id}
+        className="text-[10px] uppercase tracking-widest font-semibold"
+        style={{ color: "oklch(0.68 0.15 72)" }}
+      >
+        {label}
+      </label>
+      <div className="relative">
+        <Icon
+          className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none"
+          style={{ color: "oklch(0.55 0.1 260)" }}
+        />
+        <input
+          id={id}
+          type={type}
+          autoComplete={autoComplete}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="w-full pl-10 pr-4 py-3 rounded-xl text-sm font-medium outline-none transition-all duration-200 placeholder:text-muted-foreground/40"
+          style={{
+            background: "oklch(0.1 0.005 260 / 0.7)",
+            border: "1px solid oklch(0.3 0.06 260 / 0.5)",
+            color: "oklch(0.92 0.01 260)",
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = "oklch(0.75 0.165 72 / 0.65)";
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = "oklch(0.3 0.06 260 / 0.5)";
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ─── Login Screen ─────────────────────────────────────────────────────────────
+function LoginScreen({ onLogin }: { onLogin: () => void }) {
+  const [activeTab, setActiveTab] = useState<"login" | "register">("login");
+
+  // Login state
+  const [loginUsername, setLoginUsername] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState(false);
+  const [shaking, setShaking] = useState(false);
+
+  // Register state
+  const [regName, setRegName] = useState("");
+  const [regUsername, setRegUsername] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regConfirm, setRegConfirm] = useState("");
+  const [regError, setRegError] = useState("");
+  const [regSuccess, setRegSuccess] = useState(false);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    const users = getStoredUsers();
+    const isAdmin = loginUsername === "admin" && loginPassword === "1234";
+    const isRegistered = users.some(
+      (u) => u.username === loginUsername && u.password === loginPassword,
+    );
+    if (isAdmin || isRegistered) {
+      setLoginError(false);
+      onLogin();
+    } else {
+      setLoginError(true);
+      setShaking(true);
+      setTimeout(() => setShaking(false), 500);
+    }
+  };
+
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    setRegError("");
+    if (!regName.trim() || !regUsername.trim() || !regPassword.trim()) {
+      setRegError("Please fill in all fields.");
+      return;
+    }
+    if (regPassword !== regConfirm) {
+      setRegError("Passwords do not match.");
+      return;
+    }
+    if (regPassword.length < 4) {
+      setRegError("Password must be at least 4 characters.");
+      return;
+    }
+    const users = getStoredUsers();
+    if (
+      users.some((u) => u.username === regUsername) ||
+      regUsername === "admin"
+    ) {
+      setRegError("Username already taken. Please choose another.");
+      return;
+    }
+    const newUser: StoredUser = {
+      username: regUsername,
+      password: regPassword,
+      name: regName,
+    };
+    localStorage.setItem("cvp_users", JSON.stringify([...users, newUser]));
+    setRegSuccess(true);
+    toast.success("Registration successful!", {
+      description: "You can now log in with your new account.",
+      duration: 3500,
+    });
+    // After short delay, switch to login tab
+    setTimeout(() => {
+      setActiveTab("login");
+      setLoginUsername(regUsername);
+      setRegSuccess(false);
+      setRegName("");
+      setRegUsername("");
+      setRegPassword("");
+      setRegConfirm("");
+    }, 1400);
+  };
+
+  const GOLD = "oklch(0.75 0.165 72)";
+
+  return (
+    <div className="min-h-screen relative flex items-center justify-center px-4 py-10">
+      <BackgroundAtmosphere />
+
+      <motion.div
+        initial={{ opacity: 0, y: 32, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        className="w-full max-w-sm relative z-10"
+      >
+        {/* Logo & title */}
+        <motion.div
+          initial={{ opacity: 0, y: -12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+          className="flex flex-col items-center gap-3 mb-8"
+        >
+          <img
+            src="/assets/generated/aimaxglobal-logo-transparent.dim_120x120.png"
+            alt="AimaxGlobal"
+            className="w-16 h-16 object-contain"
+          />
+          <div className="text-center">
+            <h1 className="font-display text-2xl font-bold text-gold leading-none">
+              AimaxGlobal
+            </h1>
+            <p className="text-xs text-muted-foreground tracking-widest uppercase mt-1">
+              Crypto Portal · Secure Access
+            </p>
+          </div>
+        </motion.div>
+
+        {/* Card */}
+        <motion.div
+          animate={shaking ? { x: [0, -8, 8, -6, 6, -3, 3, 0] } : {}}
+          transition={{ duration: 0.45 }}
+          className="rounded-2xl border overflow-hidden"
+          style={{
+            background:
+              "linear-gradient(135deg, oklch(0.16 0.015 260 / 0.85) 0%, oklch(0.12 0.008 260 / 0.95) 100%)",
+            borderColor: loginError
+              ? "oklch(0.55 0.2 25 / 0.6)"
+              : `${GOLD.replace(")", " / 0.3)")}`,
+            boxShadow: loginError
+              ? "0 0 32px oklch(0.55 0.2 25 / 0.15), 0 0 80px oklch(0.55 0.2 25 / 0.05)"
+              : "0 0 32px oklch(0.75 0.165 72 / 0.1), 0 0 80px oklch(0.75 0.165 72 / 0.04)",
+            backdropFilter: "blur(24px)",
+            transition: "border-color 0.3s, box-shadow 0.3s",
+          }}
+        >
+          {/* ── Tab Bar ── */}
+          <div
+            className="flex relative"
+            style={{
+              borderBottom: "1px solid oklch(0.22 0.01 260)",
+            }}
+          >
+            {(["login", "register"] as const).map((tab) => {
+              const isActive = activeTab === tab;
+              return (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(tab);
+                    setLoginError(false);
+                    setRegError("");
+                  }}
+                  className="relative flex-1 py-3.5 text-xs font-bold uppercase tracking-widest transition-colors duration-200 focus:outline-none"
+                  style={{
+                    color: isActive
+                      ? "oklch(0.88 0.18 95)"
+                      : "oklch(0.5 0.04 260)",
+                  }}
+                >
+                  {tab === "login" ? "Login" : "Register"}
+                  {isActive && (
+                    <motion.div
+                      layoutId="auth-tab-indicator"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
+                      style={{ background: GOLD }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 500,
+                        damping: 35,
+                      }}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ── Tab Content ── */}
+          <div className="p-6 sm:p-7">
+            <AnimatePresence mode="wait" initial={false}>
+              {activeTab === "login" ? (
+                <motion.div
+                  key="login-tab"
+                  initial={{ opacity: 0, x: -18 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -18 }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  {/* Error badge */}
+                  <AnimatePresence>
+                    {loginError && (
+                      <motion.div
+                        key="login-error"
+                        initial={{ opacity: 0, y: -8, height: 0 }}
+                        animate={{ opacity: 1, y: 0, height: "auto" }}
+                        exit={{ opacity: 0, y: -8, height: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="mb-4 flex items-center gap-2 px-3 py-2.5 rounded-xl border"
+                        style={{
+                          background: "oklch(0.22 0.09 25 / 0.3)",
+                          borderColor: "oklch(0.58 0.22 25 / 0.5)",
+                        }}
+                      >
+                        <AlertTriangle
+                          className="w-3.5 h-3.5 flex-shrink-0"
+                          style={{ color: "oklch(0.72 0.22 25)" }}
+                        />
+                        <p
+                          className="text-xs font-semibold"
+                          style={{ color: "oklch(0.78 0.18 25)" }}
+                        >
+                          Invalid username or password
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  <form onSubmit={handleLogin} className="space-y-4">
+                    <AuthField
+                      id="login-username"
+                      label="Username"
+                      type="text"
+                      autoComplete="username"
+                      value={loginUsername}
+                      onChange={(v) => {
+                        setLoginUsername(v);
+                        setLoginError(false);
+                      }}
+                      placeholder="Enter username"
+                      icon={User}
+                    />
+                    <AuthField
+                      id="login-password"
+                      label="Password"
+                      type="password"
+                      autoComplete="current-password"
+                      value={loginPassword}
+                      onChange={(v) => {
+                        setLoginPassword(v);
+                        setLoginError(false);
+                      }}
+                      placeholder="Enter password"
+                      icon={Lock}
+                    />
+                    <motion.button
+                      type="submit"
+                      whileHover={{ scale: 1.025 }}
+                      whileTap={{ scale: 0.97 }}
+                      className="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide flex items-center justify-center gap-2 mt-2 transition-all duration-200"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, oklch(0.75 0.165 72) 0%, oklch(0.65 0.18 85) 50%, oklch(0.72 0.15 72) 100%)",
+                        color: "oklch(0.08 0.01 260)",
+                        boxShadow:
+                          "0 0 28px oklch(0.75 0.165 72 / 0.32), 0 4px 16px oklch(0.75 0.165 72 / 0.18)",
+                      }}
+                    >
+                      <Lock className="w-4 h-4" />
+                      Login
+                    </motion.button>
+                  </form>
+
+                  <p className="text-center text-[11px] text-muted-foreground/50 mt-5">
+                    Don't have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("register")}
+                      className="font-semibold transition-colors"
+                      style={{ color: "oklch(0.75 0.165 72)" }}
+                    >
+                      Register here
+                    </button>
+                  </p>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="register-tab"
+                  initial={{ opacity: 0, x: 18 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 18 }}
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <AnimatePresence>
+                    {regSuccess ? (
+                      <motion.div
+                        key="reg-success"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.3 }}
+                        className="flex flex-col items-center gap-3 py-8 text-center"
+                      >
+                        <div
+                          className="w-14 h-14 rounded-full flex items-center justify-center"
+                          style={{ background: "oklch(0.35 0.15 145 / 0.2)" }}
+                        >
+                          <Check
+                            className="w-7 h-7"
+                            style={{ color: "oklch(0.7 0.2 145)" }}
+                          />
+                        </div>
+                        <p
+                          className="font-display text-base font-bold"
+                          style={{ color: "oklch(0.7 0.2 145)" }}
+                        >
+                          Registration Successful!
+                        </p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Redirecting to login...
+                        </p>
+                      </motion.div>
+                    ) : (
+                      <motion.form
+                        key="reg-form"
+                        onSubmit={handleRegister}
+                        className="space-y-4"
+                        initial={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                      >
+                        {/* Register error */}
+                        <AnimatePresence>
+                          {regError && (
+                            <motion.div
+                              key="reg-error"
+                              initial={{ opacity: 0, y: -8, height: 0 }}
+                              animate={{ opacity: 1, y: 0, height: "auto" }}
+                              exit={{ opacity: 0, y: -8, height: 0 }}
+                              transition={{ duration: 0.25 }}
+                              className="flex items-center gap-2 px-3 py-2.5 rounded-xl border"
+                              style={{
+                                background: "oklch(0.22 0.09 25 / 0.3)",
+                                borderColor: "oklch(0.58 0.22 25 / 0.5)",
+                              }}
+                            >
+                              <AlertTriangle
+                                className="w-3.5 h-3.5 flex-shrink-0"
+                                style={{ color: "oklch(0.72 0.22 25)" }}
+                              />
+                              <p
+                                className="text-xs font-semibold"
+                                style={{ color: "oklch(0.78 0.18 25)" }}
+                              >
+                                {regError}
+                              </p>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+
+                        <AuthField
+                          id="reg-name"
+                          label="Full Name"
+                          type="text"
+                          autoComplete="name"
+                          value={regName}
+                          onChange={(v) => {
+                            setRegName(v);
+                            setRegError("");
+                          }}
+                          placeholder="Your full name"
+                          icon={User}
+                        />
+                        <AuthField
+                          id="reg-username"
+                          label="Username"
+                          type="text"
+                          autoComplete="username"
+                          value={regUsername}
+                          onChange={(v) => {
+                            setRegUsername(v);
+                            setRegError("");
+                          }}
+                          placeholder="Choose a username"
+                          icon={User}
+                        />
+                        <AuthField
+                          id="reg-password"
+                          label="Password"
+                          type="password"
+                          autoComplete="new-password"
+                          value={regPassword}
+                          onChange={(v) => {
+                            setRegPassword(v);
+                            setRegError("");
+                          }}
+                          placeholder="Create a password"
+                          icon={Lock}
+                        />
+                        <AuthField
+                          id="reg-confirm"
+                          label="Confirm Password"
+                          type="password"
+                          autoComplete="new-password"
+                          value={regConfirm}
+                          onChange={(v) => {
+                            setRegConfirm(v);
+                            setRegError("");
+                          }}
+                          placeholder="Repeat your password"
+                          icon={Lock}
+                        />
+
+                        <motion.button
+                          type="submit"
+                          whileHover={{ scale: 1.025 }}
+                          whileTap={{ scale: 0.97 }}
+                          className="w-full py-3.5 rounded-xl text-sm font-bold tracking-wide flex items-center justify-center gap-2 mt-2 transition-all duration-200"
+                          style={{
+                            background:
+                              "linear-gradient(135deg, oklch(0.75 0.165 72) 0%, oklch(0.65 0.18 85) 50%, oklch(0.72 0.15 72) 100%)",
+                            color: "oklch(0.08 0.01 260)",
+                            boxShadow:
+                              "0 0 28px oklch(0.75 0.165 72 / 0.32), 0 4px 16px oklch(0.75 0.165 72 / 0.18)",
+                          }}
+                        >
+                          <User className="w-4 h-4" />
+                          Create Account
+                        </motion.button>
+                      </motion.form>
+                    )}
+                  </AnimatePresence>
+
+                  {!regSuccess && (
+                    <p className="text-center text-[11px] text-muted-foreground/50 mt-5">
+                      Already have an account?{" "}
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("login")}
+                        className="font-semibold transition-colors"
+                        style={{ color: "oklch(0.75 0.165 72)" }}
+                      >
+                        Login here
+                      </button>
+                    </p>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+
+        {/* Gmail contact */}
+        <motion.a
+          href="mailto:support@aimaxglobal.com"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.45 }}
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.97 }}
+          className="flex items-center justify-center gap-2.5 mt-4 px-4 py-2.5 rounded-xl border transition-colors duration-200"
+          style={{
+            background: "oklch(0.14 0.01 25 / 0.4)",
+            borderColor: "oklch(0.5 0.18 25 / 0.35)",
+          }}
+        >
+          <img
+            src="/assets/generated/gmail-icon-transparent.dim_80x80.png"
+            alt="Gmail"
+            className="w-5 h-5 object-contain"
+          />
+          <span
+            className="text-xs font-semibold"
+            style={{ color: "oklch(0.78 0.16 25)" }}
+          >
+            Contact Support via Gmail
+          </span>
+        </motion.a>
+
+        {/* Footer note */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="text-center text-[11px] text-muted-foreground/50 mt-5"
+        >
+          © {new Date().getFullYear()}. Built with{" "}
+          <span className="text-red-400/70">♥</span> using{" "}
+          <a
+            href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(window.location.hostname)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-muted-foreground transition-colors"
+          >
+            caffeine.ai
+          </a>
+        </motion.p>
+      </motion.div>
+    </div>
   );
 }
 
@@ -960,20 +2118,48 @@ function BackgroundAtmosphere() {
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    () => localStorage.getItem("cvp_auth") === "true",
+  );
+
+  const handleLogin = () => {
+    localStorage.setItem("cvp_auth", "true");
+    setIsLoggedIn(true);
+    toast.success("Welcome back!", { description: "Login successful." });
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("cvp_auth");
+    setIsLoggedIn(false);
+  };
+
+  const toasterNode = (
+    <Toaster
+      theme="dark"
+      toastOptions={{
+        classNames: {
+          toast:
+            "!bg-[oklch(0.14_0.008_260)] !border-[oklch(0.25_0.01_260)] !text-foreground",
+          title: "!font-semibold",
+          description: "!text-muted-foreground !font-mono !text-xs",
+        },
+      }}
+    />
+  );
+
+  if (!isLoggedIn) {
+    return (
+      <>
+        {toasterNode}
+        <LoginScreen onLogin={handleLogin} />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-screen relative">
       <BackgroundAtmosphere />
-      <Toaster
-        theme="dark"
-        toastOptions={{
-          classNames: {
-            toast:
-              "!bg-[oklch(0.14_0.008_260)] !border-[oklch(0.25_0.01_260)] !text-foreground",
-            title: "!font-semibold",
-            description: "!text-muted-foreground !font-mono !text-xs",
-          },
-        }}
-      />
+      {toasterNode}
 
       <div className="relative z-10 max-w-2xl mx-auto px-4 py-10 pb-20">
         {/* ── Header ── */}
@@ -983,6 +2169,25 @@ export default function App() {
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="text-center mb-10"
         >
+          {/* Logout button — top-right of header */}
+          <div className="flex justify-end mb-2">
+            <motion.button
+              onClick={handleLogout}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors duration-200"
+              style={{
+                background: "oklch(0.13 0.008 260 / 0.7)",
+                borderColor: "oklch(0.35 0.08 25 / 0.4)",
+                color: "oklch(0.65 0.16 25)",
+              }}
+              aria-label="Logout"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Logout
+            </motion.button>
+          </div>
+
           <div className="flex items-center justify-center gap-3 mb-4">
             <img
               src="/assets/generated/aimaxglobal-logo-transparent.dim_120x120.png"
@@ -1031,7 +2236,7 @@ export default function App() {
         </motion.div>
 
         {/* ── Deposit Cards ── */}
-        <div className="space-y-5">
+        <div id="deposit-section" className="space-y-5">
           {CHAINS.map((chain, i) => (
             <DepositCard key={chain.id} chain={chain} index={i} />
           ))}
@@ -1040,6 +2245,16 @@ export default function App() {
         {/* ── Investment Plans ── */}
         <div className="mt-6">
           <InvestmentPlans />
+        </div>
+
+        {/* ── Withdrawal Section ── */}
+        <div className="mt-6">
+          <WithdrawalSection />
+        </div>
+
+        {/* ── Training Registration ── */}
+        <div className="mt-6">
+          <TrainingForm />
         </div>
 
         {/* ── AI Trading Bot ── */}
@@ -1072,7 +2287,27 @@ export default function App() {
         </motion.div>
 
         {/* ── Footer ── */}
-        <footer className="mt-10 text-center">
+        <footer className="mt-10 text-center space-y-3">
+          <a
+            href="mailto:support@aimaxglobal.com"
+            className="inline-flex items-center gap-2.5 px-4 py-2.5 rounded-xl border transition-colors duration-200 hover:opacity-90"
+            style={{
+              background: "oklch(0.14 0.01 25 / 0.4)",
+              borderColor: "oklch(0.5 0.18 25 / 0.35)",
+            }}
+          >
+            <img
+              src="/assets/generated/gmail-icon-transparent.dim_80x80.png"
+              alt="Gmail"
+              className="w-5 h-5 object-contain"
+            />
+            <span
+              className="text-xs font-semibold"
+              style={{ color: "oklch(0.78 0.16 25)" }}
+            >
+              Contact Support via Gmail
+            </span>
+          </a>
           <p className="text-xs text-muted-foreground/50">
             © {new Date().getFullYear()}. Built with{" "}
             <span className="text-red-400/70">♥</span> using{" "}
